@@ -46,3 +46,8 @@ jobs:
           path: ./cdk-layer-stack/* # NOTE: upload-artifact does not inherit working-directory setting.
           if-no-files-found: error
           retention-days: 1
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: merged-layer-arns
+          pattern: cdk-layer-stack-*
