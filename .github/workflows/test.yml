@@ -1,0 +1,49 @@
+name: Deploy merge
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    permissions:
+      id-token: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        region: ["eu-west-1", "eu-central-1"]
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: aws credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          aws-region: ${{ matrix.region }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          mask-aws-account-id: true
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: ./infra
+        run: npm ci
+      - name: Deploy
+        working-directory: ./infra
+        run: npm run deploy -- --context region=${{ matrix.region }} --require-approval never --outputs-file cdk-outputs.json
+      - name: Store ARN
+        run: |
+          mkdir cdk-layer-stack
+          jq -r -c '.InfraStack.RandomRoleArn' infra/cdk-outputs.json > cdk-layer-stack/${{ matrix.region }}-layer-version.txt
+          cat cdk-layer-stack/${{ matrix.region }}-layer-version.txt
+      - name: Save ARN
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: cdk-layer-stack
+          path: ./cdk-layer-stack/* # NOTE: upload-artifact does not inherit working-directory setting.
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
