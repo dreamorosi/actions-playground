@@ -33,7 +33,7 @@ jobs:
         run: npm ci
       - name: Deploy
         working-directory: ./infra
-        run: npm run deploy -- --context region=${{ matrix.region }} --require-approval never --outputs-file cdk-outputs.json
+        run: npm run cdk deploy -- --context region=${{ matrix.region }} --require-approval never --outputs-file cdk-outputs.json
       - name: Store ARN
         run: |
           mkdir cdk-layer-stack
