@@ -46,8 +46,19 @@ jobs:
           path: ./cdk-layer-stack/* # NOTE: upload-artifact does not inherit working-directory setting.
           if-no-files-found: error
           retention-days: 1
-      - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
+  merge-stuff:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: merged-layer-arns
+          path: cdk-layer-stack
           pattern: cdk-layer-stack-*
+          merge-multiple: true
+      - name: Check
+        run: |
+          ls -l cdk-layer-stack/*
+          cat cdk-layer-stack
